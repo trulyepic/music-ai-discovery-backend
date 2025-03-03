@@ -62,6 +62,7 @@ def generate_recommendation(prompt, num_recommendations):
     )
     return response.choices[0].message.content
 
+
 # Generate recommendations using OpenAI
 # def generate_recommendation(genre, songs, num_recommendations):
 #     top_song = songs[0] if songs else "No top song available"
@@ -105,6 +106,38 @@ def recommend_music(request: MusicRequest):
 
     recommendations = generate_recommendation(prompt, num_recommendations)
 
-    return {f"Top 10 Songs Based on {genre.capitalize()}": songs,
-            f"Song Recommendations Based on {genre.capitalize()} and Top Song of {genre.capitalize()}": recommendations
-            }
+    return {
+        "topSongs": songs,
+        "recommendations": recommendations
+    }
+
+    # return {f"Top 10 Songs Based on {genre.capitalize()}": songs, f"Song Recommendations Based on {
+    # genre.capitalize()} and Top Song of {genre.capitalize()}": recommendations }
+
+
+@app.post("/recommend_by_tracks")
+def recommend_music_by_tracks(request: TrackRequest):
+    if len(request.tracks) > 10:
+        raise HTTPException(status_code=400, detail="You can enter up to 10 tracks.")
+
+    if not request.tracks:
+        raise HTTPException(status_code=400, detail="You must provide at least one track.")
+
+    prompt = f"""
+        A user has provided the following songs that they enjoy:
+        {', '.join(request.tracks)}
+
+        Based on these tracks, suggest {request.num_recommendations} new songs that match their musical taste.
+        Explain why each song was chosen.
+        """
+    recommendations = generate_recommendation(prompt, request.num_recommendations)
+
+    return {
+        "topSongs": request.tracks,  # Ensure the key is always "topSongs"
+        "recommendations": recommendations
+    }
+
+    # return {
+    #     "Based on Tracks": request.tracks,
+    #     "Recommendations": recommendations
+    # }
