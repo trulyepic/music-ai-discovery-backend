@@ -50,12 +50,15 @@ def fetch_music_data(genre):
 
 
 # Generate recommendations with OpenAI
-def generate_recommendation(prompt):
+# Generate recommendations using OpenAI
+def generate_recommendation(prompt, num_recommendations):
     client = openai.OpenAI()
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": "You are a music recommendation assistant."},
-                  {"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are a music recommendation assistant."},
+            {"role": "user", "content": prompt}
+        ]
     )
     return response.choices[0].message.content
 
@@ -91,14 +94,17 @@ def recommend_music(request: MusicRequest):
     if not songs:
         raise HTTPException(status_code=404, detail="No songs found for this genre.")
 
-    prompt = f"A user loves {genre} music. Based on these top songs: {', '.join(songs)}, suggest {num_recommendations} songs with explanations."
+    prompt = f"""
+       A user loves {genre} music. Based on these top songs of {genre}:
+       {', '.join(songs)}
 
-    recommendations = generate_recommendation(prompt)
+       Suggest {num_recommendations} personalized music recommendations, ensuring they align with {genre} and the top 
+       song: {songs[0] if songs else 'No top song available'}.
+       Explain why you chose them.
+       """
 
-    return {
-        f"Top 10 Songs Based on {genre.capitalize()}": songs,
-        f"Song Recommendations": recommendations
-    }
+    recommendations = generate_recommendation(prompt, num_recommendations)
 
-    # return {f"Top 10 Songs Based on {genre.capitalize()}": songs, f"Song Recommendations Based on {
-    # genre.capitalize()} and Top Song of {genre.capitalize()}": recommendations }
+    return {f"Top 10 Songs Based on {genre.capitalize()}": songs,
+            f"Song Recommendations Based on {genre.capitalize()} and Top Song of {genre.capitalize()}": recommendations
+            }
